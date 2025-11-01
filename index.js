@@ -3,7 +3,12 @@ const TelegramBot = require("node-telegram-bot-api");
 const http = require("http");
 
 const token = process.env.TELEGRAM_TOKEN;
-const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL; // e.g. https://your-koyeb-app.koyeb.app
+const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL; // masalan: https://anonim-chat.koyeb.app
+
+if (!token || !webhookUrl) {
+    console.error("❌ TELEGRAM_TOKEN yoki TELEGRAM_WEBHOOK_URL .env da topilmadi");
+    process.exit(1);
+}
 
 const bot = new TelegramBot(token, { webHook: true });
 bot.setWebHook(`${webhookUrl}/bot${token}`);
@@ -13,6 +18,7 @@ let activeChats = {};
 let allUsers = new Set();
 let lastActive = {};
 
+// 🕒 5 daqiqadan oldingi userlarni online ro‘yxatdan o‘chirish
 setInterval(() => {
     const now = Date.now();
     for (let userId in lastActive) {
@@ -22,6 +28,7 @@ setInterval(() => {
     }
 }, 30000);
 
+// /start komandasi
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     allUsers.add(chatId);
@@ -45,6 +52,7 @@ bot.on("message", (msg) => {
     allUsers.add(chatId);
     lastActive[chatId] = Date.now();
 
+    // 📊 Statistika komandasi
     if (text === "📊 Statistika" || text === "/stats") {
         let stats = `
 📊 *Statistika:*
@@ -54,10 +62,11 @@ bot.on("message", (msg) => {
 💬 Aktiv chatlar: *${Object.keys(activeChats).length / 2}*
 🟢 Online (5 daqiqa ichida): *${Object.keys(lastActive).length}*
         `;
-        bot.sendMessage(chatId, stats, { parse_mode: "Markdown" });
+        bot.sendMessage(chatId, stats.trim(), { parse_mode: "Markdown" });
         return;
     }
 
+    // Chat izlash
     if (text === "Chat izlash") {
         if (activeChats[chatId])
             return bot.sendMessage(chatId, "Siz allaqachon suhbatdasiz ✅");
@@ -67,6 +76,7 @@ bot.on("message", (msg) => {
 
         if (waitingUser.length > 0) {
             let partnerId = waitingUser.shift();
+
             if (partnerId === chatId) {
                 if (waitingUser.length > 0) partnerId = waitingUser.shift();
                 else {
@@ -87,6 +97,7 @@ bot.on("message", (msg) => {
         return;
     }
 
+    // Suhbatni to‘xtatish
     if (text === "To'xtatish") {
         if (activeChats[chatId]) {
             const partnerId = activeChats[chatId];
@@ -100,12 +111,13 @@ bot.on("message", (msg) => {
         return;
     }
 
+    // Xabarlarni uzatish
     if (activeChats[chatId]) {
         bot.sendMessage(activeChats[chatId], text);
     }
 });
 
-// ✅ HTTP server (Koyeb uchun)
+// ✅ HTTP server (Koyeb, Render, Railway, Vercel uchun)
 http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.end("Webhook bot is running ✅");
