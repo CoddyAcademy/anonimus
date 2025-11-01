@@ -1,6 +1,12 @@
-require("dotenv").config()
 const TelegramBot = require("node-telegram-bot-api")
-const token = "8062050939:AAFzQ3OHMIMzzeCB8B-hN1NsNRY2eitegWI"
+
+// ⚠️ Token .env dan emas, Koyeb dagi environment variable dan olinadi
+const token = process.env.TELEGRAM_TOKEN
+
+if (!token) {
+    console.error("❌ TELEGRAM_TOKEN topilmadi! Koyeb Environment Variables ga qo'shing!")
+    process.exit(1)
+}
 
 const bot = new TelegramBot(token, { polling: true })
 
@@ -8,7 +14,6 @@ let waitingUser = []
 let activeChats = {}
 let allUsers = new Set()
 let lastActive = {}
-
 
 setInterval(() => {
     const now = Date.now()
@@ -113,3 +118,6 @@ bot.on("message", (msg) => {
         bot.sendMessage(activeChats[chatId], text)
     }
 })
+
+// ✅ Appni "jonli" ushlab turish (Koyeb o'lik deb o'ylamasligi uchun)
+setInterval(() => {}, 10000)
