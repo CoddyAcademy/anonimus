@@ -1,13 +1,8 @@
+require("dotenv").config()
 const TelegramBot = require("node-telegram-bot-api")
+const http = require("http")
 
-// ⚠️ Token .env dan emas, Koyeb dagi environment variable dan olinadi
 const token = process.env.TELEGRAM_TOKEN
-
-if (!token) {
-    console.error("❌ TELEGRAM_TOKEN topilmadi! Koyeb Environment Variables ga qo'shing!")
-    process.exit(1)
-}
-
 const bot = new TelegramBot(token, { polling: true })
 
 let waitingUser = []
@@ -25,7 +20,7 @@ setInterval(() => {
 }, 30000)
 
 bot.onText(/\/start/, (msg) => {
-    let chatId = msg.chat.id
+    const chatId = msg.chat.id
     allUsers.add(chatId)
 
     bot.sendMessage(chatId, "Salom! Anonim suhbat botiga xush kelibsiz ✌😉", {
@@ -47,7 +42,6 @@ bot.on("message", (msg) => {
     allUsers.add(chatId)
     lastActive[chatId] = Date.now()
 
-    // 📊 STATISTIKA
     if (text === "📊 Statistika" || text === "/stats") {
         let stats = `
 📊 *Statistika:*
@@ -61,28 +55,18 @@ bot.on("message", (msg) => {
         return
     }
 
-    // 🔍 CHAT IZLASH
     if (text === "Chat izlash") {
-        if (activeChats[chatId]) {
-            bot.sendMessage(chatId, "Siz allaqachon suhbatdasiz ✅")
-            return
-        }
+        if (activeChats[chatId]) return bot.sendMessage(chatId, "Siz allaqachon suhbatdasiz ✅")
 
-        if (waitingUser.includes(chatId)) {
-            bot.sendMessage(chatId, "⏳ Siz allaqachon suhbatdosh kutyapsiz...")
-            return
-        }
+        if (waitingUser.includes(chatId)) return bot.sendMessage(chatId, "⏳ Siz allaqachon kutyapsiz...")
 
         if (waitingUser.length > 0) {
             let partnerId = waitingUser.shift()
-
             if (partnerId === chatId) {
-                if (waitingUser.length > 0) {
-                    partnerId = waitingUser.shift()
-                } else {
+                if (waitingUser.length > 0) partnerId = waitingUser.shift()
+                else {
                     waitingUser.push(chatId)
-                    bot.sendMessage(chatId, "🔍 Suhbatdosh izlanmoqda...")
-                    return
+                    return bot.sendMessage(chatId, "🔍 Suhbatdosh izlanmoqda...")
                 }
             }
 
@@ -98,13 +82,11 @@ bot.on("message", (msg) => {
         return
     }
 
-    // ❌ SUHBATNI TO‘XTATISH
     if (text === "To'xtatish") {
         if (activeChats[chatId]) {
             const partnerId = activeChats[chatId]
             bot.sendMessage(partnerId, "❌ Suhbatdosh suhbatni tark etdi.")
             bot.sendMessage(chatId, "❌ Suhbat yakunlandi.")
-
             delete activeChats[partnerId]
             delete activeChats[chatId]
         } else {
@@ -113,11 +95,13 @@ bot.on("message", (msg) => {
         return
     }
 
-    // 💬 Xabarni boshqa tomonga uzatish
     if (activeChats[chatId]) {
         bot.sendMessage(activeChats[chatId], text)
     }
 })
 
-// ✅ Appni "jonli" ushlab turish (Koyeb o'lik deb o'ylamasligi uchun)
-setInterval(() => {}, 10000)
+// ✅ Fake HTTP server → Koyeb port xatosiz o‘tadi
+http.createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain" })
+    res.end("Bot is running ✅")
+}).listen(process.env.PORT || 8000)
