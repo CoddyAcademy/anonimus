@@ -1,18 +1,31 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
-const http = require("http");
+const express = require("express");
+const bodyParser = require("body-parser");
 
-const token = process.env.TELEGRAM_TOKEN;
-const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL; // masalan: https://anonim-chat.koyeb.app
+const token = process.env.TELEGRAM_TOKEN || "8062050939:AAFzQ3OHMIMzzeCB8B-hN1NsNRY2eitegWI";
+const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL; // masalan: https://sizning-app.koyeb.app
 
 if (!token || !webhookUrl) {
     console.error("❌ TELEGRAM_TOKEN yoki TELEGRAM_WEBHOOK_URL .env da topilmadi");
     process.exit(1);
 }
 
-const bot = new TelegramBot(token, { webHook: true });
+// 🔹 Botni webhook rejimida yaratamiz
+const bot = new TelegramBot(token);
 bot.setWebHook(`${webhookUrl}/bot${token}`);
 
+// 🔹 Express server yaratish
+const app = express();
+app.use(bodyParser.json());
+
+// 🔹 Telegram webhook requestlarini qabul qilish
+app.post(`/bot${token}`, (req, res) => {
+    bot.processUpdate(req.body);
+    res.sendStatus(200);
+});
+
+// 🔹 Foydalanuvchi va chat ma’lumotlari
 let waitingUser = [];
 let activeChats = {};
 let allUsers = new Set();
@@ -117,8 +130,11 @@ bot.on("message", (msg) => {
     }
 });
 
-// ✅ HTTP server (Koyeb, Render, Railway, Vercel uchun)
-http.createServer((req, res) => {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("Webhook bot is running ✅");
-}).listen(process.env.PORT || 8000);
+// 🔹 Oddiy endpoint (bot ishlayotganini tekshirish uchun)
+app.get("/", (req, res) => {
+    res.send("Webhook bot is running ✅");
+});
+
+// 🔹 Serverni ishga tushirish
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
