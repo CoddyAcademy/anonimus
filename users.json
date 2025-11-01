@@ -1,0 +1,23 @@
+[
+  {
+    "id": 5062570019,
+    "username": null,
+    "first_name": "Ahmedov",
+    "last_name": null,
+    "joined_at": "2025-11-01T13:51:00.659Z"
+  },
+  {
+    "id": 7077612624,
+    "username": "intention_admin",
+    "first_name": "Intention Academy",
+    "last_name": null,
+    "joined_at": "2025-11-01T13:51:34.981Z"
+  },
+  {
+    "id": 5894012903,
+    "username": "coddy_admin",
+    "first_name": "Coddy Academy Admin",
+    "last_name": null,
+    "joined_at": "2025-11-01T13:56:11.662Z"
+  }
+]
