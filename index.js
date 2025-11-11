@@ -3,7 +3,7 @@ const TelegramBot = require("node-telegram-bot-api");
 const express = require("express");
 const bodyParser = require("body-parser");
 
-const token = process.env.TELEGRAM_TOKEN || "8062050939:AAFzQ3OHMIMzzeCB8B-hN1NsNRY2eitegWI";
+const token = process.env.TELEGRAM_TOKEN || "SIZNING_TOKEN";
 const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL; // masalan: https://sizning-app.koyeb.app
 
 if (!token || !webhookUrl) {
@@ -31,7 +31,7 @@ let activeChats = {};
 let allUsers = new Set();
 let lastActive = {};
 
-// 🕒 5 daqiqadan oldingi userlarni online ro‘yxatdan o‘chirish
+// 🔹 5 daqiqadan oldingi userlarni online ro‘yxatdan o‘chirish
 setInterval(() => {
     const now = Date.now();
     for (let userId in lastActive) {
@@ -40,6 +40,12 @@ setInterval(() => {
         }
     }
 }, 30000);
+
+// 🔹 Majburiy kanallar
+const requiredChannels = [
+    { username: "@WorkedLink", name: "Kanal 1" },
+    { username: "@brown_blog", name: "Kanal 2" }
+];
 
 // /start komandasi
 bot.onText(/\/start/, (msg) => {
@@ -58,14 +64,15 @@ bot.onText(/\/start/, (msg) => {
     });
 });
 
-bot.on("message", (msg) => {
+// 🔹 Foydalanuvchi xabarlari
+bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
 
     allUsers.add(chatId);
     lastActive[chatId] = Date.now();
 
-    // 📊 Statistika komandasi
+    // 📊 Statistika
     if (text === "📊 Statistika" || text === "/stats") {
         let stats = `
 📊 *Statistika:*
@@ -79,7 +86,7 @@ bot.on("message", (msg) => {
         return;
     }
 
-    // Chat izlash
+    // 🔹 Chat izlash
     if (text === "Chat izlash") {
         if (activeChats[chatId])
             return bot.sendMessage(chatId, "Siz allaqachon suhbatdasiz ✅");
@@ -87,6 +94,29 @@ bot.on("message", (msg) => {
         if (waitingUser.includes(chatId))
             return bot.sendMessage(chatId, "⏳ Siz allaqachon kutyapsiz...");
 
+        // 🔹 Obuna tekshirish
+        let notSubscribed = [];
+        for (let channel of requiredChannels) {
+            try {
+                const member = await bot.getChatMember(channel.username, chatId);
+                if (["left", "kicked"].includes(member.status)) {
+                    notSubscribed.push(channel);
+                }
+            } catch (err) {
+                console.log("Xatolik kanal tekshirishda:", err);
+                notSubscribed.push(channel);
+            }
+        }
+
+        if (notSubscribed.length > 0) {
+            // 🔹 Inline tugmalar bilan obuna bo‘lish
+            const buttons = notSubscribed.map(c => [{ text: `Obuna bo‘lish: ${c.name}`, url: `https://t.me/${c.username.replace("@","")}` }]);
+            return bot.sendMessage(chatId, "❌ Suhbat boshlash uchun quyidagi kanallarga obuna bo‘ling:", {
+                reply_markup: { inline_keyboard: buttons }
+            });
+        }
+
+        // 🔹 Suhbat izlash
         if (waitingUser.length > 0) {
             let partnerId = waitingUser.shift();
 
@@ -110,7 +140,7 @@ bot.on("message", (msg) => {
         return;
     }
 
-    // Suhbatni to‘xtatish
+    // 🔹 Suhbatni to‘xtatish
     if (text === "To'xtatish") {
         if (activeChats[chatId]) {
             const partnerId = activeChats[chatId];
@@ -124,7 +154,7 @@ bot.on("message", (msg) => {
         return;
     }
 
-    // Xabarlarni uzatish
+    // 🔹 Xabarlarni uzatish
     if (activeChats[chatId]) {
         bot.sendMessage(activeChats[chatId], text);
     }
